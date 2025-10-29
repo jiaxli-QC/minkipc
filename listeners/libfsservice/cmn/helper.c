@@ -13,6 +13,12 @@
 #include "cmn.h"
 #include "helper.h"
 
+#ifdef USE_GLIB
+#include <glib.h>
+#define strlcat g_strlcat
+#define strlcpy g_strlcpy
+#endif
+
 #define WHITE_LIST_SIZE 4
 static char *gp_whitelist_paths[] = {
 	"/data/system/users/",

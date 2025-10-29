@@ -54,6 +54,13 @@ target_link_libraries(fsservice
 	PRIVATE ${QCBOR_LIBRARIES}
 )
 
+if(${USE_GLIB})
+	find_package(PkgConfig)
+	pkg_check_modules(GLIB2 REQUIRED IMPORTED_TARGET glib-2.0>=2.10)
+	include_directories(BEFORE ${GLIB2_INCLUDE_DIRS})
+	target_link_libraries(fsservice PRIVATE PkgConfig::GLIB2)
+endif()
+
 # ''Library version''.
 
 set_target_properties(fsservice PROPERTIES

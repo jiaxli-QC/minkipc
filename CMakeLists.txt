@@ -14,17 +14,21 @@ option(BUILD_TA_AUTOLOAD_LISTENER "Build TA autoload Listener" TRUE)
 option(BUILD_FS_LISTENER "Build File system Listener" TRUE)
 # Build Secure File system listener
 option(BUILD_GPFS_LISTENER "Build GP File system Listener" TRUE)
+# Use GLib for strlcat/strlcpy fallback
+option(USE_GLIB "Use GLIB functions" TRUE)
 
 include(GNUInstallDirs)
 
-set(MINKIDLC_BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/minkidlc)
+set(MINKIDLC_BIN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/idlc" CACHE PATH "Directory containing the idlc executable")
 
-file(DOWNLOAD
-  https://github.com/quic/mink-idl-compiler/releases/download/v0.2.0/idlc
-  ${MINKIDLC_BIN_DIR}/minkidlc
-)
+if ("${MINKIDLC_BIN_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}/idlc")
+	file(DOWNLOAD
+	https://github.com/quic/mink-idl-compiler/releases/download/v0.2.0/idlc
+	${MINKIDLC_BIN_DIR}/idlc
+	)
+endif()
 
-file(CHMOD ${MINKIDLC_BIN_DIR}/minkidlc PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
+file(CHMOD ${MINKIDLC_BIN_DIR}/idlc PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
 
 add_compile_options(
 	-Wall -Wextra -Werror -Wshadow -Wcast-align

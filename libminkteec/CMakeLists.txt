@@ -44,7 +44,7 @@ foreach(IDL ${IDLS})
 		add_custom_command(
 			OUTPUT  ${IDL_OUT}
 			DEPENDS ${INPUT}
-			COMMAND ${MINKIDLC_BIN_DIR}/minkidlc ${INPUT} -o ${IDL_OUT} ${VARIANT}
+			COMMAND ${MINKIDLC_BIN_DIR}/idlc ${INPUT} -o ${IDL_OUT} ${VARIANT}
 		)
 
 		list(APPEND IDL_OUT_LIST ${IDL_OUT})

@@ -22,6 +22,12 @@
 #include "fs.h"
 #include "helper.h"
 
+#ifdef USE_GLIB
+#include <glib.h>
+#define strlcat g_strlcat
+#define strlcpy g_strlcpy
+#endif
+
 static int error_number;
 
 static int rmdir_h(char *);

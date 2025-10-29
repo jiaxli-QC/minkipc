@@ -22,6 +22,12 @@
 #include "helper.h"
 #include "gpfs.h"
 
+#ifdef USE_GLIB
+#include <glib.h>
+#define strlcat g_strlcat
+#define strlcpy g_strlcpy
+#endif
+
 static int gpfile_readwrite_helper(uint32_t cmd_id, char *path_name,
 				   uint32_t path_name_len, uint32_t flags,
 				   off_t offset, uint8_t *buf, size_t buf_len,
