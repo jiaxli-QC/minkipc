@@ -1,0 +1,10 @@
+[Unit]
+Description=QTEE Supplicant Service
+
+[Service]
+Type=exec
+ExecStart=@CMAKE_INSTALL_PREFIX@/bin/qtee_supplicant
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
