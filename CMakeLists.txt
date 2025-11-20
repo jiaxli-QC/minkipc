@@ -15,7 +15,7 @@ option(BUILD_FS_LISTENER "Build File system Listener" TRUE)
 # Build Secure File system listener
 option(BUILD_GPFS_LISTENER "Build GP File system Listener" TRUE)
 # Use GLib for strlcat/strlcpy fallback
-option(USE_GLIB "Use GLIB functions" TRUE)
+option(USE_GLIB "Use GLIB functions" FALSE)
 
 include(GNUInstallDirs)
 
