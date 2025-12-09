@@ -1,6 +1,7 @@
 // Copyright (c) 2025, Qualcomm Innovation Center, Inc. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+#if defined(__aarch64__)
       .global    recv_ioctl
       .global    recv_skip
       .global    recv
@@ -16,3 +17,4 @@ recv_skip:
       ret
  
       .end
+#endif

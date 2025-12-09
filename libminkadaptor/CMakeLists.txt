@@ -35,6 +35,7 @@ include_directories(${QCOMTEE_INCLUDE_DIRS})
 
 set(SRC
 	src/syscall.S
+	src/syscall32.S
 	src/supplicant.c
 	src/mink_adaptor.c
 )
