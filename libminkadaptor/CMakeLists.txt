@@ -34,10 +34,15 @@ include_directories(${QCOMTEE_INCLUDE_DIRS})
 # ''Source files''.
 
 set(SRC
-	src/syscall.S
 	src/supplicant.c
 	src/mink_adaptor.c
 )
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch32|arm)$")
+	list(APPEND SRC src/syscall32.S)    # ARM32
+else()
+	list(APPEND SRC src/syscall.S)      # ARM64
+endif()
 
 add_library(minkadaptor SHARED ${SRC})
 
