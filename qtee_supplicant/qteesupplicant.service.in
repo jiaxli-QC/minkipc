@@ -4,11 +4,28 @@
 Description=QTEE Supplicant Service
 BindsTo=dev-tee0.device
 After=dev-tee0.device sfsconfig.service
+# When listener registration fails because the underlying qcom_scm SHM
+# Bridge SMC / QTEE handshake is temporarily broken (kernel logs
+# "SHM Bridge failed: ret -22"), qtee_supplicant exits immediately. With
+# the systemd defaults (DefaultStartLimitIntervalSec=10s,
+# DefaultStartLimitBurst=5) the service is permanently disabled after a
+# handful of fast retries with the message "Start request repeated too
+# quickly". Widen the start-rate window below so the service keeps
+# retrying long enough to recover automatically once the kernel/QTEE
+# side stabilizes (e.g. after a remoteproc/firmware re-attach).
+StartLimitIntervalSec=120
+StartLimitBurst=20
 
 [Service]
 Type=exec
 ExecStart=@CMAKE_INSTALL_PREFIX@/bin/qtee_supplicant
 Restart=always
+# Wait long enough between restarts that a transient SCM/QTEE handshake
+# failure (SHM Bridge create returning -EINVAL) does not burn through
+# the start-limit budget within seconds. 5 s is short enough to recover
+# quickly once the underlying issue clears, and long enough to let the
+# remoteproc subsystem finish its own retry cycle.
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
