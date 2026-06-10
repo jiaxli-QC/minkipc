@@ -77,8 +77,22 @@ static void deinit_listener_svc(size_t i)
  * @brief Stop listener services.
  *
  * Stops all listener services waiting for a listener request from QTEE.
+ *
+ * @param call_deinit  When true, invoke each registered listener's deinit()
+ *                     callback before closing its library handle (normal
+ *                     teardown). When false, skip the deinit() callbacks and
+ *                     only close the library handles.
+ *
+ * The deinit() callbacks issue remote Object_release calls over the
+ * MINK/smcinvoke transport. On the failed-startup rollback path the transport
+ * may already be in a broken/unusable state (the very fault that aborted
+ * startup, e.g. a missing RPMB device node or a down QTEE-MINK channel).
+ * Releasing over a dead transport dereferences a stale invoke/context pointer
+ * and crashes the process with SIGSEGV. Since main() returns immediately after
+ * rollback and the process exits, QTEE reclaims this client's listener
+ * registrations on process death, so skipping deinit() on that path is safe.
  */
-static void stop_listeners_services(void)
+static void stop_listeners_services(bool call_deinit)
 {
 	size_t idx = 0;
 	size_t n_listeners = sizeof(listeners)/sizeof(struct listener_svc);
@@ -88,7 +102,9 @@ static void stop_listeners_services(void)
 	for (idx = 0; idx < n_listeners; idx++) {
 		/* Resource cleanup for registered listeners */
 		if(listeners[idx].is_registered) {
-			deinit_listener_svc(idx);
+			if (call_deinit) {
+				deinit_listener_svc(idx);
+			}
 
 			listeners[idx].is_registered = false;
 		}
@@ -159,7 +175,14 @@ int start_listener_services(void)
 	return ret;
 
 fail:
-	stop_listeners_services();
+	/*
+	 * Startup failed. Do not invoke the listeners' deinit() callbacks here:
+	 * the failure typically means the MINK/smcinvoke transport is broken,
+	 * and the deinit() Object_release calls would crash on that dead
+	 * transport. Only close the library handles; the process exits right
+	 * after this, and QTEE reclaims the listener registrations on exit.
+	 */
+	stop_listeners_services(false);
 	return ret;
 
 }
