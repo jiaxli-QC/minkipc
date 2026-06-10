@@ -4,11 +4,31 @@
 Description=QTEE Supplicant Service
 BindsTo=dev-tee0.device
 After=dev-tee0.device sfsconfig.service
+# Allow many restart attempts within a wide window so transient QTEE/SCM
+# SHM Bridge failures during early boot do not trip systemd's default
+# StartLimit and produce "Start request repeated too quickly".
+#
+# Expected worst-case startup latency (per process attempt):
+#   <listener count> x LISTENER_INIT_MAX_RETRIES (3) x
+#   LISTENER_INIT_RETRY_DELAY_MS (200 ms)
+#   = up to ~2.4 s for 4 listeners (TIME/FS/GPFS/RPMB) before
+#     start_listener_services() returns.
+# Combined with RestartSec=2 and StartLimitBurst=20 below, systemd may take
+# tens of seconds to settle in the worst transient-failure case. Any unit
+# declaring After=qteesupplicant.service must therefore set its own
+# TimeoutStartSec generously (>= 60 s recommended) — please grep system unit
+# files when adding new dependents.
+StartLimitIntervalSec=600
+StartLimitBurst=20
 
 [Service]
 Type=exec
 ExecStart=@CMAKE_INSTALL_PREFIX@/bin/qtee_supplicant
 Restart=always
+# Back off between restarts so we don't pound qcom_scm/QTEE while it is
+# still warming up. Without this, the user-space loop hits the kernel
+# SHM Bridge create path within milliseconds and systemd kills the unit.
+RestartSec=2
 
 [Install]
 WantedBy=multi-user.target
