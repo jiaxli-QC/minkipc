@@ -19,9 +19,9 @@
  * translation code serves the libminkadaptor backend (mink_teec.c) and the
  * direct libqcomtee backend (gp_teec.c).
  *
- * The nine entry points the public API calls down into are NOT declared here.
- * Each backend declares them in its own private header - mink_teec.h and
- * gp_teec.h - so that neither has to see the contract of the other.
+ * Each backend declares the complete public API backend contract in its own
+ * private header - mink_teec.h and gp_teec.h. Hooks used directly by this
+ * shared translation layer are also declared below.
  */
 
 #define MSGV printf
@@ -145,6 +145,24 @@ typedef struct {
 } GP_Parameter;
 
 /**
+ * @brief gp_call.
+ *
+ * Everything an IGPAppClient.openSession or IGPSession.invokeCommand request
+ * carries besides the method's own scalars: the translated parameters and the
+ * three type/code words derived from the TEEC_Operation.
+ *
+ * Zero-initializing this struct is NOT sufficient: @ref gp_params_INIT has to
+ * run over @ref param afterwards, because out_buf.len_out has to point back at
+ * out_buf.len for the memref size write-back to land anywhere.
+ */
+struct gp_call {
+	GP_Parameter param[MAX_NUM_PARAMS];
+	uint32_t param_types;
+	uint32_t ex_param_types;
+	uint32_t cancel_code;
+};
+
+/**
  * @brief Query the address and size of the memory backing a memory object.
  *
  * Provided by the active backend: over libminkadaptor it forwards to
@@ -157,6 +175,20 @@ typedef struct {
  * @return 0 on success, -1 on failure.
  */
 int gp_obj_mem_info(teec_obj_t mem_obj, void **addr, size_t *size);
+
+/**
+ * @brief Register shared memory through the active backend.
+ *
+ * The parameter translation layer uses this hook when a large temporary
+ * memory reference has to be converted to registered shared memory.
+ *
+ * @param ctx The initialized TEE context.
+ * @param shm The shared memory to register.
+ * @param convert Whether the memory was converted from a temporary reference.
+ * @return TEEC_SUCCESS on success, or a TEEC_ERROR_* code on failure.
+ */
+TEEC_Result register_shared_memory(TEEC_Context *ctx, TEEC_SharedMemory *shm,
+                                   uint8_t convert);
 
 /**
  * @brief Initialize the GP parameters.
