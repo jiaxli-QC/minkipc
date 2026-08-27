@@ -31,6 +31,7 @@
  * same macro. gp_wait.h in turn pulls in <pthread.h> for supplicant.h.
  */
 #include "gp_params.h"
+#include "qcomtee_object_types.h"
 #include "gp_wait.h"
 #include "transport/supplicant.h"
 

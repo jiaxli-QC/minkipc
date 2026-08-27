@@ -189,3 +189,101 @@ static int gp_wire_invoke(teec_obj_t target, uint32_t method_id, int n,
 
 	return 0;
 }
+
+TEEC_Result initialize_context(TEEC_Context *ctx)
+{
+	struct supplicant *sup = NULL;
+	struct qcomtee_object *creds = TEEC_OBJ_NULL;
+	struct qcomtee_object *client_env = TEEC_OBJ_NULL;
+	struct qcomtee_param p[2] = { 0 };
+	qcomtee_result_t result = QCOMTEE_OK;
+	uint32_t uid = GP_CGPAPPCLIENT_UID;
+
+	if (!ctx)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	/* Nothing below assumes the caller handed us a cleared struct, and the
+	 * error paths release whatever is set, so start from a known state.
+	 */
+	ctx->imp.root_obj = TEEC_OBJ_NULL;
+	ctx->imp.app_client = TEEC_OBJ_NULL;
+	ctx->imp.waiter_cbo = TEEC_OBJ_NULL;
+
+	/* Opens /dev/tee0 and starts the threads that serve QTEE's callback
+	 * requests. The root object owns the supplicant: releasing the last
+	 * reference to it is what stops those threads again.
+	 */
+	sup = supplicant_start(DEFAULT_CBOBJ_THREAD_CNT);
+	if (!sup)
+		return TEEC_ERROR_GENERIC;
+	ctx->imp.root_obj = sup->root;
+
+	if (qcomtee_object_credentials_init(ctx->imp.root_obj, &creds))
+		goto err_root;
+
+	/* The credentials object is handed over rather than lent, so the slot
+	 * is filled directly instead of through oi_fill(): our single
+	 * reference becomes QTEE's. Only a transport failure leaves it with
+	 * us, and only then do we release it.
+	 */
+	p[0].attr = QCOMTEE_OBJREF_INPUT;
+	p[0].object = creds;
+	OBJ_OUT(p[1]);
+
+	if (qcomtee_object_invoke(ctx->imp.root_obj, GP_OP_REGISTER_AS_CLIENT,
+				  p, 2, &result)) {
+		qcomtee_object_refs_dec(creds);
+		goto err_root;
+	}
+	if (result)
+		goto err_root;
+
+	client_env = p[1].object;
+
+	memset(p, 0, sizeof(p));
+	UBUF_IN(p[0], &uid, sizeof(uid));
+	OBJ_OUT(p[1]);
+
+	if (qcomtee_object_invoke(client_env, GP_OP_CLIENT_ENV_OPEN, p, 2,
+				  &result))
+		goto err_client_env;
+	if (result)
+		goto err_client_env;
+
+	ctx->imp.app_client = p[1].object;
+
+	/* The waiter has to share the session's root, or QTEE would refuse it
+	 * as belonging to a different namespace.
+	 */
+	if (cwait_open(ctx->imp.root_obj, &ctx->imp.waiter_cbo))
+		goto err_app_client;
+
+	/* The client environment was only needed to reach the app client. */
+	qcomtee_object_refs_dec(client_env);
+
+	return TEEC_SUCCESS;
+
+err_app_client:
+	TEEC_OBJ_RELEASE(ctx->imp.app_client);
+err_client_env:
+	qcomtee_object_refs_dec(client_env);
+err_root:
+	TEEC_OBJ_RELEASE(ctx->imp.root_obj);
+
+	return TEEC_ERROR_GENERIC;
+}
+
+void finalize_context(TEEC_Context *ctx)
+{
+	if (!ctx)
+		return;
+
+	/* The waiter holds a reference on the root and the app client is a
+	 * QTEE object reached through it, so the root goes last: dropping its
+	 * last reference is what tears down the supplicant threads, and they
+	 * must still be running while anything else is being released.
+	 */
+	TEEC_OBJ_RELEASE(ctx->imp.waiter_cbo);
+	TEEC_OBJ_RELEASE(ctx->imp.app_client);
+	TEEC_OBJ_RELEASE(ctx->imp.root_obj);
+}
