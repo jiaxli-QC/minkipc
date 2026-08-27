@@ -4,6 +4,11 @@ project(minkipc)
 # Build Mink TEEC library
 option(BUILD_MINKTEEC "Build MinkTEEC" TRUE)
 
+# Let MinkTEEC talk to libqcomtee directly instead of going through
+# libminkadaptor. This changes the layout of the implementation-defined parts
+# of TEEC_Context/TEEC_Session/TEEC_SharedMemory, so it is an ABI switch.
+option(MINKTEEC_DIRECT_QCOMTEE "Build MinkTEEC directly on top of libqcomtee" OFF)
+
 option(BUILD_UNITTEST "Build unittest" FALSE)
 
 # Build Time listener

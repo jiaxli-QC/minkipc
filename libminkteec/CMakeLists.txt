@@ -18,6 +18,27 @@ if(NOT THREADS_FOUND)
 	message(FATAL_ERROR "Threads not found")
 endif()
 
+# ''Backend selection''.
+#
+# MINKTEEC_DIRECT_QCOMTEE is declared in the top-level CMakeLists.txt. Its
+# value has to reach every consumer of tee_client_api.h, because it selects
+# the width of teec_obj_t and therefore the layout of TEEC_Context,
+# TEEC_Session and TEEC_SharedMemory. Freeze it into a generated header that
+# gets installed next to the public one; a -D on the command line would only
+# cover this library's own translation units.
+
+if(MINKTEEC_DIRECT_QCOMTEE)
+	set(MINKTEEC_DIRECT_QCOMTEE_VALUE 1)
+	set(pc_req_private "qcomtee")
+else()
+	set(MINKTEEC_DIRECT_QCOMTEE_VALUE 0)
+	set(pc_req_private "minkadaptor")
+endif()
+
+configure_file(include/minkteec_config.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/include/minkteec_config.h @ONLY
+)
+
 # ''Build IDL Headers''.
 
 set (IDLS
@@ -85,6 +106,9 @@ set_target_properties(minkteec PROPERTIES
 
 target_include_directories(minkteec
 	PUBLIC include
+	# The generated config header sits in the build tree; in-tree consumers
+	# need it too, hence BUILD_INTERFACE alongside the installed copy.
+	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 	PRIVATE idl
 	PRIVATE src
 )
@@ -102,6 +126,12 @@ install(TARGETS minkteec
 
 install(DIRECTORY include
 	DESTINATION ${CMAKE_INSTALL_PREFIX}
+	PATTERN "minkteec_config.h.in" EXCLUDE
+)
+
+# The generated backend-selection header must travel with tee_client_api.h.
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/minkteec_config.h"
+	DESTINATION "${CMAKE_INSTALL_PREFIX}/include"
 )
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/minkteec.pc"
