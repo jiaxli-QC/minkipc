@@ -145,6 +145,24 @@ typedef struct {
 } GP_Parameter;
 
 /**
+ * @brief gp_call.
+ *
+ * Everything an IGPAppClient.openSession or IGPSession.invokeCommand request
+ * carries besides the method's own scalars: the translated parameters and the
+ * three type/code words derived from the TEEC_Operation.
+ *
+ * Zero-initializing this struct is NOT sufficient: @ref gp_params_INIT has to
+ * run over @ref param afterwards, because out_buf.len_out has to point back at
+ * out_buf.len for the memref size write-back to land anywhere.
+ */
+struct gp_call {
+	GP_Parameter param[MAX_NUM_PARAMS];
+	uint32_t param_types;
+	uint32_t ex_param_types;
+	uint32_t cancel_code;
+};
+
+/**
  * @brief Query the address and size of the memory backing a memory object.
  *
  * Provided by the active backend: over libminkadaptor it forwards to
