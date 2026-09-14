@@ -5,10 +5,11 @@
 #define __FS_CMN_H_
 
 #include <stdio.h>
+#include <syslog.h>
 
-#define MSGV(...)
-#define MSGD(...)
-#define MSGE printf
+#define MSGV(fmt, ...) syslog(LOG_INFO, fmt, ##__VA_ARGS__)
+#define MSGD(fmt, ...) syslog(LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define MSGE(fmt, ...) syslog(LOG_ERR, fmt, ##__VA_ARGS__)
 
 #define UNUSED(x) (void)(x)
 

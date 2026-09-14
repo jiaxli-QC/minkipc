@@ -6,10 +6,11 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <syslog.h>
 
-#define MSGV printf
-#define MSGE printf
-#define MSGD(...)
+#define MSGV(fmt, ...) syslog(LOG_INFO, fmt, ##__VA_ARGS__)
+#define MSGD(fmt, ...) syslog(LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define MSGE(fmt, ...) syslog(LOG_ERR, fmt, ##__VA_ARGS__)
 
 #define TIME_SERVICE_BUF_LEN    (20*1024)
 #define TIME_SERVICE_ID          0xb
