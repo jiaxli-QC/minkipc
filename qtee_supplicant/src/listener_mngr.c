@@ -106,6 +106,7 @@ static int init_listener_svc(size_t i)
 	listener_init init_func;
 	int ret = 0;
 
+	MSGE("Init for %s \n", listeners[i].service_name);
 	listeners[i].lib_handle = dlopen(listeners[i].file_name,
 					 RTLD_NOW);
 	if (listeners[i].lib_handle == NULL) {
@@ -142,7 +143,7 @@ int start_listener_services(void)
 
 	MSGD("Total listener services to start = %zu\n", n_listeners);
 
-	for (idx = 0; idx < n_listeners; idx++) {
+	for (idx = 0; idx < n_listeners - 1; idx++) {
 
 		ret = init_listener_svc(idx);
 		if (ret) {
